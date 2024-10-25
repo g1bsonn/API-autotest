@@ -218,8 +218,6 @@ class SauresTestAPI(unittest.TestCase):
         self.assertEqual(response.json()["data"], test_case["expected_data"])
         print(response.json()["errors"])
 
-  def test_user_profile_post(self):
-
 
 if __name__ == "__main__":
   unittest.main()
