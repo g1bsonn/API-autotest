@@ -11,7 +11,7 @@ class SauresTestAPI(unittest.TestCase):
       # Положительный тест
       {
         "data": {
-          "email": "testuser20@saures.ru",
+          "email": "testuser34@saures.ru",
           "firstname": "api",
           "lastname": "autotest",
           "phone": "+79991234567",
@@ -172,21 +172,19 @@ class SauresTestAPI(unittest.TestCase):
     test_cases = [
       # Положительный тест, корректный sid
       {
-        "description": "Успешное получение профиля",
         "sid": SauresTestAPI.class_sid,
         "expected_status_code": 200,
         "expected_status": "ok",
         "expected_errors": [],
         "expected_data": {
-          "firstname": "Артемий Олегович",
+          "firstname": "API_autotest",
           "lastname": "Колчин",
           "email": "artem.kolchin.979@gmail.com",
-          "phone": "1111111"
+          "phone": "89001111111"
         }
       },
       # Негативный тест, некорректный sid
       {
-        "description": "Некорректный SID",
         "sid": "invalid_sid",
         "expected_status_code": 200,
         "expected_status": "bad",
@@ -220,6 +218,109 @@ class SauresTestAPI(unittest.TestCase):
 
   def test_user_profile_post(self):
 
+    test_cases = [
+      {
+        # Корректное редактирование данных пользователя
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "email": "artem.kolchin.979@gmail.com",
+          "firstname": "API_autotest",
+          "lastname": "Колчин",
+          "phone": "89001111111",
+          "password": "qwerty"
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Некорректный SID
+        "data": {
+          "sid": "invalid_sid",
+          "email": "new_email@example.com",
+          "firstname": "test",
+          "lastname": "test",
+          "phone": "89001111111",
+          "password": "new_password"
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Некорректный номер
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "email": "new_email@example.com",
+          "firstname": "test",
+          "lastname": "test",
+          "phone": "123",
+          "password": "new_password"
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "phone": [
+              "Введён неверный телефон"
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Некорректный email
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "email": "invalid_email",
+          "firstname": "test",
+          "lastname": "test",
+          "phone": "89001111111",
+          "password": "new_password"
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "email": [
+              "Введён неверный email"
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Ввод существующего email
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "email": "a.kolchin@saures.ru",
+          "firstname": "test",
+          "lastname": "test",
+          "phone": "89001111111",
+          "password": "new_password"
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "email": [
+              "Пользователь уже зарегистрирован"
+            ]
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/user/profile", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+      print(test_case["expected_errors"])
 
 if __name__ == "__main__":
   unittest.main()
