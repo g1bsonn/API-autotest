@@ -11,7 +11,7 @@ class SauresTestAPI(unittest.TestCase):
       # Положительный тест
       {
         "data": {
-          "email": "testuser36@saures.ru",
+          "email": "testuser55@saures.ru",
           "firstname": "api",
           "lastname": "autotest",
           "phone": "+79991234567",
@@ -172,7 +172,6 @@ class SauresTestAPI(unittest.TestCase):
     test_cases = [
       # Положительный тест, корректный sid
       {
-        "description": "Успешное получение профиля",
         "sid": SauresTestAPI.class_sid,
         "expected_status_code": 200,
         "expected_status": "ok",
@@ -186,7 +185,6 @@ class SauresTestAPI(unittest.TestCase):
       },
       # Негативный тест, некорректный sid
       {
-        "description": "Некорректный SID",
         "sid": "invalid_sid",
         "expected_status_code": 200,
         "expected_status": "bad",
@@ -322,8 +320,182 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
       self.assertEqual(response.json()["data"], test_case["expected_data"])
-      print(test_case["expected_errors"])
 
+
+  def test_user_objects_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"]}
+      response = requests.get("https://testapi.saures.ru/1.0/user/objects", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "qwe",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "BadRequest",
+            "msg": "Неверный идентификатор объекта"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, непривязанный объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "1",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/get", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_meters_get(self):
+
+    test_cases = [
+      # Положительный тест без даты
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "date": "",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Положительный тест с датой
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "date": "2023-08-11T00:00:00",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "date": "2023-08-11T00:00:00",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "qwe",
+        "date": "2023-08-11T00:00:00",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Идентификатор объекта является обязательным параметром",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, непривязанный объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "1",
+        "date": "2023-08-11T00:00:00",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "date": "qwe",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неверный формат даты/времени",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id'], "date": test_case['date']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/meters", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
 
 if __name__ == "__main__":
   unittest.main()
