@@ -11,7 +11,7 @@ class SauresTestAPI(unittest.TestCase):
       # Положительный тест
       {
         "data": {
-          "email": "testuser55@saures.ru",
+          "email": "testuser60@saures.ru",
           "firstname": "api",
           "lastname": "autotest",
           "phone": "+79991234567",
@@ -492,6 +492,93 @@ class SauresTestAPI(unittest.TestCase):
     for test_case in test_cases:
       query_headers = {"sid": test_case["sid"], "id": test_case['id'], "date": test_case['date']}
       response = requests.get("https://testapi.saures.ru/1.0/object/meters", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_meter_get(self):
+
+    test_cases = [
+      # Положительный тест абсолютные значения
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "start": "2024-08-05T00:00:00",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Положительный тест расход
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "start": "2024-07-05T00:00:00",
+        "finish": "2024-11-05T00:00:00",
+        "group": "month",
+        "absolute": "false",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "123",
+        "id": "67340",
+        "start": "2024-08-05T00:00:00",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, несуществующий id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "1",
+        "start": "2024-07-30T00:00:00",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Устройства с таким идентификатором не существует",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав для id
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "66666",
+        "start": "2024-07-30T00:00:00",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id'], "start": test_case['start'], "finish": test_case['finish'], "group": test_case['absolute'], "date": test_case['absolute']}
+      response = requests.get("https://testapi.saures.ru/1.0/meter/get", params=query_headers)
       print(response.json()["data"])
       self.assertEqual(response.status_code, 200)
       self.assertEqual(response.json()["status"], test_case["expected_status"])
