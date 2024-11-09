@@ -1,6 +1,7 @@
 import requests
 import unittest
 import uuid
+import time
 
 class SauresTestAPI(unittest.TestCase):
   class_sid = 0
@@ -11,7 +12,7 @@ class SauresTestAPI(unittest.TestCase):
       # Положительный тест
       {
         "data": {
-          "email": "testuser60@saures.ru",
+          "email": "testuser77@saures.ru",
           "firstname": "api",
           "lastname": "autotest",
           "phone": "+79991234567",
@@ -111,6 +112,7 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
       self.assertEqual(response.json()["data"], test_case["expected_data"])
+
 
 
   def test_login_post(self):
@@ -489,6 +491,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       }
     ]
+    time.sleep(4)
     for test_case in test_cases:
       query_headers = {"sid": test_case["sid"], "id": test_case['id'], "date": test_case['date']}
       response = requests.get("https://testapi.saures.ru/1.0/object/meters", params=query_headers)
@@ -505,7 +508,7 @@ class SauresTestAPI(unittest.TestCase):
         "sid": SauresTestAPI.class_sid,
         "id": "67340",
         "start": "2024-08-05T00:00:00",
-        "finish": "2024-11-30T00:00:00",
+        "finish": "2024-08-10T00:00:00",
         "group": "day",
         "absolute": "true",
         "expected_status": "ok",
@@ -558,6 +561,23 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
+      {
+        # Негативный тест, отсутствие параметра id
+        "sid": SauresTestAPI.class_sid,
+        "id": "",
+        "start": "2024-07-30T00:00:00",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Идентификатор устройства является обязательным параметром",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
       # Негативный тест, нет прав для id
       {
         "sid": SauresTestAPI.class_sid,
@@ -575,14 +595,503 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
+      # Негативный тест, нет поля start
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "start": "",
+        "finish": "2024-11-30T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Не найден обязательный параметр: start",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, неверный формат даты
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "start": "123",
+        "finish": "123",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неверный формат даты",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
     ]
+    time.sleep(3)
     for test_case in test_cases:
-      query_headers = {"sid": test_case["sid"], "id": test_case['id'], "start": test_case['start'], "finish": test_case['finish'], "group": test_case['absolute'], "date": test_case['absolute']}
+      query_headers = {
+        "sid": test_case["sid"],
+        "id": test_case['id'],
+        "start": test_case['start'],
+        "finish": test_case['finish'],
+        "group": test_case['group'],
+        "absolute": test_case['absolute']
+      }
       response = requests.get("https://testapi.saures.ru/1.0/meter/get", params=query_headers)
       print(response.json()["data"])
       self.assertEqual(response.status_code, 200)
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+
+  def test_meter_control_post(self):
+
+    test_cases = [
+      {
+        # Корректная активация крана
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67343",
+          "command": "activate",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {
+        "description": "ожидается закрытие",
+        "type": "close"
+        },
+      },
+      {
+        # Некорректный SID
+        "data": {
+          "sid": "invalid_sid",
+          "id": "67343",
+          "command": "activate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Несуществующий id устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "1",
+          "command": "activate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Устройства с таким идентификатором не существует",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, отсутствие параметра id
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "",
+          "command": "activate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Идентификатор устройства является обязательным параметром",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Нет прав для id
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "66666",
+          "command": "activate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, id неуправляемого устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67340",
+          "command": "activate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неуправляемый тип устройства",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, некорректная команда для устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67343",
+          "command": "deactivate",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неверная команда",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, отсутствие команды
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67343",
+          "command": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Команда является обязательным параметром",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, некорректная команда
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67343",
+          "command": "qwe",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неизвестная команда",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    time.sleep(2)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/meter/control", data=test_case["data"])
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_meter_settings_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "67340",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id устройства
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "1",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "AbstractException",
+            "msg": "Неверный идентификатор устройства"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, непривязанное устройство
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67300",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id']}
+      response = requests.get("https://testapi.saures.ru/1.0/meter/settings", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_meter_settings_post(self):
+
+    test_cases = [
+      {
+        # Корректное изменение настроек устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67340",
+          "lk": "30",
+          "st": "600",
+          "pv": "+10",
+          "sv": "1689",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Некорректный SID
+        "data": {
+          "sid": "invalid_sid",
+          "id": "67340",
+          "lk": "30",
+          "st": "600",
+          "pv": "+10",
+          "sv": "1689.01",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Несуществующий id устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "1",
+          "lk": "30",
+          "st": "600",
+          "pv": "+10",
+          "sv": "1689.01",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Неверный идентификатор устройства",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Нет прав для id
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "66666",
+          "lk": "30",
+          "st": "600",
+          "pv": "+10",
+          "sv": "1689.01",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, не целые числа
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "67340",
+          "lk": "100.01",
+          "st": "100.01",
+          "pv": "100.01",
+          "sv": "100.01",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "lk": [
+              "Not a valid integer value."
+            ],
+            "pv": [
+              "Not a valid integer value."
+            ],
+            "st": [
+              "Not a valid integer value."
+            ],
+            "sv": [
+              "Not a valid integer value."
+            ]
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    time.sleep(2.5)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/meter/settings", data=test_case["data"])
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_meter_types_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {
+            "types": [
+              {
+                  "id": 1,
+                  "name": "Холодная вода"
+              },
+              {
+                  "id": 2,
+                  "name": "Горячая вода"
+              },
+              {
+                  "id": 3,
+                  "name": "Газ"
+              },
+              {
+                  "id": 4,
+                  "name": "Протечка"
+              },
+              {
+                  "id": 5,
+                  "name": "Температура"
+              },
+              {
+                  "id": 6,
+                  "name": "Кран/реле"
+              },
+              {
+                  "id": 7,
+                  "name": "Тепло"
+              },
+              {
+                  "id": 8,
+                  "name": "Электричество"
+              },
+              {
+                  "id": 9,
+                  "name": "Датчик"
+              },
+              {
+                  "id": 10,
+                  "name": "Состояние крана"
+              },
+              {
+                  "id": 11,
+                  "name": "Тепло"
+              },
+              {
+                  "id": 12,
+                  "name": "Тепло"
+              },
+              {
+                  "id": 13,
+                  "name": "Тепло"
+              },
+              {
+                  "id": 14,
+                  "name": "Давление"
+              },
+              {
+                  "id": 18,
+                  "name": "Температура и влажность"
+              },
+              {
+                  "id": 19,
+                  "name": "Температура"
+              },
+              {
+                  "id": 20,
+                  "name": "Влажность"
+              },
+              {
+                  "id": 15,
+                  "name": "Виртуальный измеритель"
+              },
+              {
+                  "id": 16,
+                  "name": "Виртуальный датчик"
+              },
+              {
+                  "id": 17,
+                  "name": "Психрометр"
+              },
+              {
+                  "id": 21,
+                  "name": "Виртуальный счётчик"
+              }
+          ]
+        },
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"]}
+      response = requests.get("https://testapi.saures.ru/1.0/meter/types", params=query_headers)
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
 
 if __name__ == "__main__":
   unittest.main()
