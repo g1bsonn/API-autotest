@@ -1150,6 +1150,29 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       },
       {
+        # Негативный тест некорректный utc и тип объекта
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "city": "Астрахань",
+          "utc": "qwe",
+          "street": f"{uuid.uuid4()}",
+          "building": "1",
+          "number": "1",
+          "type": "100",
+          "management_inn": "111111111",
+          "personal_account": "111111",
+          "account_id": "222222",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "utc": ["Некорректное дробное число"],
+            "type": ["Not a valid choice."]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
         # Негативный тест, некорректный sid
         "data": {
           "sid": "invalid_sid",
@@ -1205,11 +1228,32 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       },
       {
+        # Негативный тест некорректный city_id
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "city_id": "9999999999",
+          "street": f"{uuid.uuid4()}",
+          "building": "1",
+          "number": "1",
+          "type": "1",
+          "management_inn": "111111111",
+          "personal_account": "111111",
+          "account_id": "222222",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'city_id': ['Город/населённый пункт не найден']
+          }
+        ],
+        "expected_data": {}
+      },
+      {
         # Негативный тест, повторное создание объекта
         "data": {
           "sid": SauresTestAPI.class_sid,
           "city_id": "1",
-          "street": "651acba2-bae3-4d44-85c6-d96b54f6cfd7",
+          "street": "9bac5c04-471e-426e-b7ff-42025ce74d38",
           "building": "1",
           "number": "1",
           "type": "1",
@@ -1470,7 +1514,220 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
       self.assertEqual(response.json()["data"], test_case["expected_data"])
 
+  def test_sensor_add_get(self):
 
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "40F5200B61E5",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "sn": "B4E62D3F7178",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, контроллер не выходил на связь
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "B4E62D3F7178",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": ["Контроллер не настроен или не выходил на связь более 3 дней"]
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет новых устройств
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "BCFF4D3D68FF",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": ["В облачном сервисе отсутствует информация о новых устройствах."]
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный серийный номер
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "123",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": ["Контроллер не настроен или не выходил на связь более 3 дней"]
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "sn": test_case['sn']}
+      response = requests.get("https://testapi.saures.ru/1.0/sensor/add", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_sensor_add_post(self):
+
+    test_cases = [
+      #Добавить устройство если есть свободный канал
+      #{
+        # Положительный тест добавление устройства
+        #"data": {
+          #"sid": SauresTestAPI.class_sid,
+          #"sn": "BCFF4D3D68FF",
+          #"object_id": "79528",
+          #"5_name": "test_api",
+          #"5_sn": "123123",
+          #"5_eirc": "11111111",
+          #"add_lic": "",
+        #},
+        #"expected_status": "ok",
+        #"expected_errors": [],
+        #"expected_data": {}
+      #},
+      {
+        # Негативный тест неверный sid
+        "data": {
+          "sid": "invalid_sid",
+          "sn": "BCFF4D3D68FF",
+          "object_id": "79528",
+          "5_name": "test_api",
+          "5_sn": "123123",
+          "5_eirc": "11111111",
+          "add_lic": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный серийный номер
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "08F9E056BFF5",
+          "object_id": "79528",
+          "5_name": "test_api",
+          "5_sn": "123123",
+          "5_eirc": "11111111",
+          "add_lic": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": ["Контроллер не настроен или не выходил на связь более 3 суток"]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав для id объекта
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "object_id": "1",
+          "5_name": "test_api",
+          "5_sn": "123123",
+          "5_eirc": "11111111",
+          "add_lic": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+    ]
+    print(SauresTestAPI.email)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/sensor/add", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_sensor_settings_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "B4E62D3F7178",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "sn": "B4E62D3F7178",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, контроллер не выходил на связь
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "40F5200B61E5",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет новых устройств
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "qwe",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "AbstractException",
+            "msg": "Неверный идентификатор контроллера"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "sn": test_case['sn']}
+      response = requests.get("https://testapi.saures.ru/1.0/sensor/settings", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
 
 if __name__ == "__main__":
   unittest.main()
