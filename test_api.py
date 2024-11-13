@@ -613,6 +613,23 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
+      # Негативный тест, start старше чем finish
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "67340",
+        "start": "2024-11-10T00:00:00",
+        "finish": "2024-11-05T00:00:00",
+        "group": "day",
+        "absolute": "true",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Ошибка данных",
+            "name": "AbstractException"
+          }
+        ],
+        "expected_data": {}
+      },
       # Негативный тест, неверный формат даты
       {
         "sid": SauresTestAPI.class_sid,
@@ -1557,7 +1574,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_status": "bad",
         "expected_errors": [
           {
-            "sn": ["В облачном сервисе отсутствует информация о новых устройствах."]
+            "sn": ['Контроллер не настроен или не выходил на связь более 3 дней']
           }
         ],
         "expected_data": {}
@@ -1728,6 +1745,301 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.status_code, 200)
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_sensor_settings_post(self):
+    string = f"{uuid.uuid4()}"
+    test_cases = [
+      {
+        # Положительный тест редактирование контроллера объект Москва, Новочеремушкинская, 61, TEST 3.5а
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "CC50E32C7A4B",
+          "name": string[:25],
+          "new_firmware": "",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, длинное имя контроллера
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "CC50E32C7A4B",
+          "name": f"{uuid.uuid4()}",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'name': [
+                'Длина не должна превышать 30 символов'
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав на контроллер
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "051900450021",
+          "name": f"{uuid.uuid4()}",
+          "new_firmware": "",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, некорректный sid
+        "data": {
+          "sid": "invalid_sid",
+          "sn": "CC50E32C7A4B",
+          "name": f"{uuid.uuid4()}",
+          "new_firmware": "",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректная версия прошивки
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "CC50E32C7A4B",
+          "name": "qwe",
+          "new_firmware": "11111111",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "new_firmware": [
+                'Контроллер не выходил на связь более 15 суток.'
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректная версия прошивки
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "name": "qwe",
+          "new_firmware": "11111111",
+          "check_hours": "12",
+          "send": "120",
+          "log": "60",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "new_firmware": [
+              "Значение недоступно."
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный тип данных
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "CC50E32C7A4B",
+          "name": "1,2",
+          "new_firmware": "1,2",
+          "check_hours": "1,2",
+          "send": "1,2",
+          "log": "1,2",
+          "vol": "1,2",
+          "scan": "1,2",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "check_hours": [
+                "Not a valid integer value."
+            ],
+            "log": [
+                "Not a valid integer value."
+            ],
+            "new_firmware": [
+                "Контроллер не выходил на связь более 15 суток."
+            ],
+            "scan": [
+                "Not a valid integer value.",
+                "Значение от 0 до 3600"
+            ],
+            "send": [
+                "Not a valid integer value."
+            ],
+            "vol": [
+                "Not a valid integer value."
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест отсутствие sn
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "name": "",
+          "new_firmware": "",
+          "check_hours": "",
+          "send": "",
+          "log": "",
+          "vol": "",
+          "scan": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": [
+                "Серийный номер: 6,7,8 цифр или 12 символов",
+                "Обязательный параметр"
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, малые периоды отправки
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "CC50E32C7A4B",
+          "name": "qwe",
+          "check_hours": "12",
+          "send": "1",
+          "log": "1",
+          "vol": "1000",
+          "scan": "1",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "log": [
+                "Период журналирования. Значения меньше 5 недоступны."
+            ],
+            "send": [
+                "Период связи. Значения меньше 5 недоступны."
+            ]
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    time.sleep(2)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/sensor/settings", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_sensor_battery_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "B4E62D3F7178",
+        "start": "2024-08-01",
+        "finish": "2024-08-10",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "sn": "B4E62D3F7178",
+        "start": "2024-08-01",
+        "finish": "2024-08-10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на контроллер
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "051900450020",
+        "start": "2024-08-01",
+        "finish": "2024-08-10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный sn
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "qwe",
+        "start": "",
+        "finish": "",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "sn": ["Неверный идентификатор контроллера"]
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "sn": test_case['sn'], "start": test_case['start'], "finish": test_case['finish']}
+      response = requests.get("https://testapi.saures.ru/1.0/sensor/battery", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
 
 if __name__ == "__main__":
   unittest.main()
