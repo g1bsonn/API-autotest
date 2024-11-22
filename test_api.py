@@ -1537,7 +1537,7 @@ class SauresTestAPI(unittest.TestCase):
       # Положительный тест, корректный sid
       {
         "sid": SauresTestAPI.class_sid,
-        "sn": "40F5200B61E5",
+        "sn": "BCFF4D3D68FF",
         "expected_status": "ok",
         "expected_errors": [],
         # Добавить expected data опционально
@@ -1567,14 +1567,14 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
-      # Негативный тест, нет новых устройств
+      # Негативный тест, нет доступа к контроллеру
       {
         "sid": SauresTestAPI.class_sid,
-        "sn": "BCFF4D3D68FF",
+        "sn": "BCFF4D3D7CEC",
         "expected_status": "bad",
         "expected_errors": [
           {
-            "sn": ['Контроллер не настроен или не выходил на связь более 3 дней']
+            "sn": ["Контроллер не настроен или не выходил на связь более 3 дней"]
           }
         ],
         "expected_data": {}
@@ -1582,7 +1582,7 @@ class SauresTestAPI(unittest.TestCase):
       # Негативный тест, некорректный серийный номер
       {
         "sid": SauresTestAPI.class_sid,
-        "sn": "123",
+        "sn": "1",
         "expected_status": "bad",
         "expected_errors": [
           {
@@ -1678,6 +1678,26 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
+      {
+        # Негативный тест некорректный sn
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "12",
+          "object_id": "1",
+          "5_name": "test_api",
+          "5_sn": "123123",
+          "5_eirc": "11111111",
+          "add_lic": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
     ]
     print(SauresTestAPI.email)
     for test_case in test_cases:
@@ -1738,6 +1758,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       }
     ]
+    time.sleep(3)
     for test_case in test_cases:
       query_headers = {"sid": test_case["sid"], "sn": test_case['sn']}
       response = requests.get("https://testapi.saures.ru/1.0/sensor/settings", params=query_headers)
@@ -1856,7 +1877,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       },
       {
-        # Негативный тест некорректная версия прошивки
+        # Негативный тест некорректная версия прошивки НУЖЕН ФИКС
         "data": {
           "sid": SauresTestAPI.class_sid,
           "sn": "BCFF4D3D68FF",
@@ -1871,9 +1892,8 @@ class SauresTestAPI(unittest.TestCase):
         "expected_status": "bad",
         "expected_errors": [
           {
-            "new_firmware": [
-              "Значение недоступно."
-            ]
+            "msg": "",
+            "name": "SystemError"
           }
         ],
         "expected_data": {}
@@ -1966,7 +1986,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       }
     ]
-    time.sleep(2)
+    time.sleep(5)
     for test_case in test_cases:
       response = requests.post("https://testapi.saures.ru/1.0/sensor/settings", data=test_case["data"])
       self.assertEqual(response.status_code, 200)
@@ -2017,6 +2037,38 @@ class SauresTestAPI(unittest.TestCase):
         ],
         "expected_data": {}
       },
+      # Негативный тест, start задан некорректно
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "B4E62D3F7178",
+        "start": "123",
+        "finish": "2024-08-10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "start": [
+              "Неверный формат даты"
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, finish задан некорректно
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "B4E62D3F7178",
+        "start": "2024-08-10",
+        "finish": "123",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "finish": [
+              "Неверный формат даты"
+            ]
+          }
+        ],
+        "expected_data": {}
+      },
       # Негативный тест, некорректный sn
       {
         "sid": SauresTestAPI.class_sid,
@@ -2032,6 +2084,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       }
     ]
+    time.sleep(2)
     for test_case in test_cases:
       query_headers = {"sid": test_case["sid"], "sn": test_case['sn'], "start": test_case['start'], "finish": test_case['finish']}
       response = requests.get("https://testapi.saures.ru/1.0/sensor/battery", params=query_headers)
@@ -2040,6 +2093,1138 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
 
+  def test_sensor_move_post(self):  #Добавить удаление доступа
+    test_cases = [
+      {
+        # Положительный тест перемещение контроллера
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "from": "80251",
+          "to": "79528",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Положительный тест перемещение обратно
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "from": "79528",
+          "to": "80251",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест неверный sid
+        "data": {
+          "sid": "invalid_sid",
+          "sn": "BCFF4D3D68FF",
+          "from": "79528",
+          "to": "80251",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный sn
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "qwe",
+          "from": "79528",
+          "to": "80251",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'sn': ['Неверный идентификатор контроллера']
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав для контроллера
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "0A1500250042",
+          "from": "79528",
+          "to": "80251",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'sn': ['Контроллер не привязан к объекту']
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест Отсутствие меток на объекты
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "from": "",
+          "to": "",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': '',
+            'name': 'SystemError'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректные метки на объекты
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "from": "1234567890",
+          "to": "1234567890",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id to
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "sn": "BCFF4D3D68FF",
+          "from": "79528",
+          "to": "1234",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    print(SauresTestAPI.email)
+    time.sleep(2)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/sensor/move", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
 
+  def test_sensor_clear_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "BCFF4D3D68FF",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "sn": "BCFF4D3D68FF",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный sn
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "qwe",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          "sn": ["Неверный идентификатор контроллера"]
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав для sn
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "0A1500250042",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    time.sleep(3)
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "sn": test_case['sn']}
+      response = requests.get("https://testapi.saures.ru/1.0/sensor/clear", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_sensor_delete_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Негативный тест, повторное удаление
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "40F5200B5CAB",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "sn": "BCFF4D3D68FF",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный sn
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "qwe",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'sn': ['Неверный идентификатор контроллера']
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав для sn
+      {
+        "sid": SauresTestAPI.class_sid,
+        "sn": "0A1500250042",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    time.sleep(2)
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "sn": test_case['sn']}
+      response = requests.get("https://testapi.saures.ru/1.0/sensor/delete", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_meter_save_post(self):
+    string = f"{uuid.uuid4()}"
+    test_cases = [
+      {
+        # Положительный тест редактирование контроллера объект Москва, Новочеремушкинская, 61, TEST 3.5а
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "88427",
+          "name": string,
+          "sn": "123456",
+          "approve_dt": "2025-08-10",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры неактивен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, некорректный sid
+        "data": {
+          "sid": "invalid_sid",
+          "id": "88427",
+          "name": "api_autotest",
+          "sn": "123456",
+          "approve_dt": "2025-08-10",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры активен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав на id устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "18799",
+          "name": "api_autotest",
+          "sn": "123456",
+          "approve_dt": "2025-08-10",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры активен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "msg": "Недостаточно прав!",
+            "name": "PermissionDenied"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест, некорректный id устройства
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "99999999999",
+          "name": "api_autotest",
+          "sn": "123456",
+          "approve_dt": "2025-08-10",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры активен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Неверный идентификатор устройства',
+            'name': 'AbstractException'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест длинное название
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "88427",
+          "name": "api_autotest111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111",
+          "sn": "123456",
+          "approve_dt": "2025-08-10",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры активен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'name': ['Длина не должна превышать 100 символов']
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест неверный формат даты
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "88427",
+          "name": "api_autotest",
+          "sn": "123456",
+          "approve_dt": "123",
+          "eirc_num": "111111",
+          "active_text": "датчик температуры активен",
+          "passive_text": "датчик температуры неактивен",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'approve_dt': ['Not a valid date value.']
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/meter/save", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_object_journal_get(self):
+
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "1",
+        "step": "10",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "82212",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "qwe",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Неверный идентификатор объекта',
+            'name': 'BadRequest'
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректная страница
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "0",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недопустимое значение параметра page',
+            'name': 'BadRequest'
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный тип данных
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "1,2",
+        "step": "1,2",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': '',
+            'name': 'SystemError'
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id'], "page": test_case['page'], "step": test_case['step']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/journal", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_tariffs_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "358",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invelid_sid",
+        "object_id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "665",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'msg': 'Недостаточно прав!',
+          'name': 'PermissionDenied'
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "11111111111111111111111111",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "object_id": test_case['object_id']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/tariffs", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_tariffs_post(self):
+    test_cases = [
+      {
+        # Положительный тест смена тарифа
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "plug": "9",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Положительный тест смена тарифа обратно
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "plug": "4",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест неверный sid
+        "data": {
+          "sid": "invalid_sid",
+          "object_id": "13946",
+          "plug": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id объекта
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "11111111111111111",
+          "plug": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав на объект
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "665",
+          "plug": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id тарифа
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "plug": "999999",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'На этот тариф нельзя перейти',
+            'name': 'AbstractException'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест тариф для УК
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "plug": "6",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'На этот тариф нельзя перейти',
+            'name': 'AbstractException'
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    print(SauresTestAPI.email)
+    time.sleep(2)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/object/tariffs", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_object_services_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "358",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invelid_sid",
+        "object_id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "665",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'msg': 'Недостаточно прав!',
+          'name': 'PermissionDenied'
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "object_id": "11111111111111111111111111",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "object_id": test_case['object_id']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/services", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_services_post(self):
+    test_cases = [
+      {
+        # Положительный тест подключение услуги
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "plug": "10",
+          "tariff_id": "4",
+        },
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Положительный тест отключение услуги
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "13946",
+          "unplug": "10"
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Неверные параметры запроса',
+            'name': 'BadRequest'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест неверный sid
+        "data": {
+          "sid": "invalid_sid",
+          "object_id": "13946",
+          "plug": "9",
+          "tariff_id": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id объекта
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "0",
+          "plug": "9",
+          "tariff_id": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест нет прав на объект
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "665",
+          "plug": "9",
+          "tariff_id": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id тарифа
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "665",
+          "plug": "9",
+          "tariff_id": "99999",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест тариф не активен
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "665",
+          "plug": "9",
+          "tariff_id": "10",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест некорректный id услуги
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "object_id": "665",
+          "plug": "999999",
+          "tariff_id": "4",
+        },
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недостаточно прав!',
+            'name': 'PermissionDenied'
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    print(SauresTestAPI.email)
+    time.sleep(2)
+    for test_case in test_cases:
+      response = requests.post("https://testapi.saures.ru/1.0/object/services", data=test_case["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  #def test_payment_create_post(self):
+
+  def test_object_transactions_get(self):
+    test_cases = [
+      # Положительный тест, корректный sid
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "1",
+        "step": "10",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "82212",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "qwe",
+        "page": "1",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Неверный идентификатор объекта',
+            'name': 'BadRequest'
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректная страница
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "0",
+        "step": "10",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': 'Недопустимое значение параметра page',
+            'name': 'BadRequest'
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный тип данных
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "page": "1,2",
+        "step": "1,2",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            'msg': '',
+            'name': 'SystemError'
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id'], "page": test_case['page'],
+                       "step": test_case['step']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/journal", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  def test_object_schedule_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "358",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "665",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'msg': 'Недостаточно прав!',
+          'name': 'PermissionDenied'
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "11111111111111111111111111",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/schedule", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
+  #https://api.saures.ru/1.0/object/schedule post
+
+  def test_schedule_templates_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "expected_status": "ok",
+        "expected_errors": [],
+        "expected_data": {
+          "1": "По умолчанию",
+          "11": "АТОМЭНЕРГОСБЫТ, EMAIL и SMS, электроэнергия",
+          "12": "ЯрОбл ЕИРЦ, SMS, вода",
+          "13": "ЕРЦ Мурманской области, EMAIL, SMS",
+          "14": "ВЦ ИНКОМУС Пермь, SMS, вода",
+          "15": "Пермэнергосбыт, SMS, электроэнергия",
+          "17": "ТНС энерго, EMAIL, электроэнергия",
+          "2": "Стандартный (фио, адрес, лицевой счет в теле)\n",
+          "20": "ГАЗПРОММЕЖРЕГИОНГАЗ (разделитель *, в конце #), SMS, газ",
+          "21": "АМУРЭНЕРГОСБЫТ, EMAIL",
+          "22": "АМУРЭНЕРГОСБЫТ, SMS",
+          "23": "Промтехэнерго, SMS",
+          "24": "СарРЦ Саратов, SMS, вода",
+          "25": "ВОДОКАНАЛ-НТ НИЖНИЙ ТАГИЛ, вода",
+          "3": "ВЦ по КП г. Владивостока, EMAIL, вода\n",
+          "4": "ГАЗПРОММЕЖРЕГИОНГАЗ (разделитель пробел), SMS, газ",
+          "6": "ПАО ДЭК, SMS, электроэнергия",
+          "7": "ГАЗПРОММЕЖРЕГИОНГАЗ (разделитель #), SMS, газ",
+          "9": "ГАЗПРОММЕЖРЕГИОНГАЗ (разделитель *), SMS, газ"
+        },
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invelid_sid",
+        "object_id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"]}
+      response = requests.get("https://testapi.saures.ru/1.0/schedule/templates", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+      self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_schedule_template_get(self): # Добавить положительный тест
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "1",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id шаблона
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "111111111111",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'msg': 'Неверный идентификатор шаблона',
+          'name': 'BadRequest'
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "0",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id']}
+      response = requests.get("https://testapi.saures.ru/1.0/schedule/template", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
 if __name__ == "__main__":
   unittest.main()
+
+  # у некоторых тестов отсутствует положительный тест кейс, также пройтись поиском по systemerror
