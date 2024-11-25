@@ -3695,9 +3695,9 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест редактирование уведомления sms объект Москва, тест
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "34174",
-          "type": "notification",
-          "receiver": "+79651974538",
+          "id": "34159",
+          "type": "notice+error",
+          "receiver": "artem.kolchin.979@gmail.com",
         },
         "expected_status": "ok",
         "expected_errors": [],
@@ -3786,9 +3786,9 @@ class SauresTestAPI(unittest.TestCase):
         # Негативный тест некорректное поле type
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "34174",
+          "id": "34159",
           "type": "notice",
-          "receiver": "+79651974538",
+          "receiver": "artem.kolchin.979@gmail.com",
         },
         "expected_status": "bad",
         "expected_errors": [
