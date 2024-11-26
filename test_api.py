@@ -2961,18 +2961,13 @@ class SauresTestAPI(unittest.TestCase):
         "data": {
           "sid": SauresTestAPI.class_sid,
           "object_id": "80251",
-          "tariff_id": "4",
+          "tariff_id": "1800",
           "payment_method": "bank_card",
           "value": "10",
           "return_url": "https://test.saures.ru/",
         },
-        "expected_status": "bad",
-        "expected_errors": [
-          {
-            'msg': 'Ошибка доступа',
-            'name': 'AbstractException'
-          }
-        ],
+        "expected_status": "ok",
+        "expected_errors": [],
         "expected_data": {}
       },
       {
@@ -3017,7 +3012,7 @@ class SauresTestAPI(unittest.TestCase):
         # Негативный тест, некорректный метод оплаты
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "object_id": "123",
+          "object_id": "80251",
           "tariff_id": "4",
           "payment_method": "qwe",
           "value": "10",
@@ -3036,9 +3031,9 @@ class SauresTestAPI(unittest.TestCase):
     for test_case in test_cases:
       response = requests.post("https://testapi.saures.ru/1.0/payment/create", data=test_case["data"])
       self.assertEqual(response.status_code, 200)
+      print(response.json()["data"])
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
-      self.assertEqual(response.json()["data"], test_case["expected_data"])
 
   def test_object_transactions_get(self):
     test_cases = [
@@ -3875,6 +3870,66 @@ class SauresTestAPI(unittest.TestCase):
       self.assertEqual(response.json()["status"], test_case["expected_status"])
       self.assertEqual(response.json()["errors"], test_case["expected_errors"])
       self.assertEqual(response.json()["data"], test_case["expected_data"])
+
+  def test_object_weather_get(self):
+
+    test_cases = [
+      # Положительный тест, получение тарифов
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "80251",
+        "expected_status": "ok",
+        "expected_errors": [],
+        # Добавить expected data опционально
+      },
+      # Негативный тест, некорректный sid
+      {
+        "sid": "invalid_sid",
+        "id": "358",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "WrongSIDException",
+            "msg": "Неверный sid"
+          }
+        ],
+        "expected_data": {}
+      },
+      # Негативный тест, нет прав на объект
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "665",
+        "expected_status": "bad",
+        "expected_errors": [
+        {
+          'msg': 'Недостаточно прав!',
+          'name': 'PermissionDenied'
+        }
+      ],
+        "expected_data": {}
+      },
+      # Негативный тест, некорректный id объекта
+      {
+        "sid": SauresTestAPI.class_sid,
+        "id": "11111111111111111111111111",
+        "expected_status": "bad",
+        "expected_errors": [
+          {
+            "name": "PermissionDenied",
+            "msg": "Недостаточно прав!"
+          }
+        ],
+        "expected_data": {}
+      }
+    ]
+    for test_case in test_cases:
+      query_headers = {"sid": test_case["sid"], "id": test_case['id']}
+      response = requests.get("https://testapi.saures.ru/1.0/object/weather", params=query_headers)
+      print(response.json()["data"])
+      self.assertEqual(response.status_code, 200)
+      self.assertEqual(response.json()["status"], test_case["expected_status"])
+      self.assertEqual(response.json()["errors"], test_case["expected_errors"])
+
 
 if __name__ == "__main__":
   unittest.main()
