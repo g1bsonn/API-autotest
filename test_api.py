@@ -672,7 +672,7 @@ class SauresTestAPI(unittest.TestCase):
         # Корректная активация крана
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "67343",
+          "id": "67335",
           "command": "activate",
         },
         "expected_status": "ok",
@@ -1305,10 +1305,10 @@ class SauresTestAPI(unittest.TestCase):
         "expected_errors": [],
         "expected_data": [
           {
-            "email": "losevvv@mail.ru",
+            'email': 'gxgxgxdisol@mail.ru',
             "id": 4218,
             "level": 1,
-            "name": "Владимир Владимирович Лосев"
+            'name': 'Владимир Владимирович '
           },
           {
             "email": "demo@saures.ru",
@@ -1396,9 +1396,9 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест редактирование доступа
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "85391",
-          "email": "testuser5@saures.ru",
-          "level": "1",
+          "id": "84925",
+          "email": "a.kolchin@saures.ru",
+          "level": "0",
         },
         "expected_status": "ok",
         "expected_errors": [],
@@ -1562,7 +1562,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_status": "bad",
         "expected_errors": [
           {
-            "sn": ["Контроллер не настроен или не выходил на связь более 3 дней"]
+            "sn": ['В облачном сервисе отсутствует информация о новых устройствах.']
           }
         ],
         "expected_data": {}
@@ -1574,7 +1574,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_status": "bad",
         "expected_errors": [
           {
-            "sn": ["Контроллер не настроен или не выходил на связь более 3 дней"]
+            "sn": ['В облачном сервисе отсутствует информация о новых устройствах.']
           }
         ],
         "expected_data": {}
@@ -2298,8 +2298,7 @@ class SauresTestAPI(unittest.TestCase):
         "expected_status": "bad",
         "expected_errors": [
           {
-            "name": "PermissionDenied",
-            "msg": "Недостаточно прав!"
+            'sn': ['Неверный идентификатор контроллера']
           }
         ],
         # Добавить expected data опционально
@@ -2644,7 +2643,7 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест смена тарифа
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "object_id": "13946",
+          "object_id": "80251",
           "plug": "9",
         },
         "expected_status": "ok",
@@ -2655,7 +2654,7 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест смена тарифа обратно
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "object_id": "13946",
+          "object_id": "80251",
           "plug": "4",
         },
         "expected_status": "ok",
@@ -3234,7 +3233,7 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест редактирование уведомления sms объект Москва, тест
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "25518",
+          "id": "26975",
           "type": "email",
           "day": "32",
           "time": "0:00",
@@ -3264,7 +3263,7 @@ class SauresTestAPI(unittest.TestCase):
         # Положительный тест ручная отправка
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "manual": "25518",
+          "manual": "26975",
         },
         "expected_status": "ok",
         "expected_errors": [],
@@ -3687,15 +3686,30 @@ class SauresTestAPI(unittest.TestCase):
         "expected_data": {}
       },
       {
-        # Положительный тест редактирование уведомления sms объект Москва, тест
+        # Положительный тест редактирование уведомления объект Москва, тест
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "34159",
+          "id": "36005",
           "type": "notice+error",
-          "receiver": "artem.kolchin.979@gmail.com",
+          "receiver": "apiautotest@saures.ru",
         },
         "expected_status": "ok",
         "expected_errors": [],
+        "expected_data": {}
+      },
+      {
+        # Негативный тест запрещенный домен
+        "data": {
+          "sid": SauresTestAPI.class_sid,
+          "id": "36005",
+          "type": "notice+error",
+          "receiver": "artem.kolchin.979@gmail.com",
+        },
+        "expected_status": "bad",
+        "expected_errors": [{'receiver': ['Почтовые домены gmail.com, yahoo.com, hotmail.com, live.com, '
+               'outlook.com, icloud.com, me.com и mac.com в системе SAURES '
+               'использовать невозможно. Укажите EMAIL другой почтовой '
+               'службы.']}],
         "expected_data": {}
       },
  #     {
@@ -3781,9 +3795,9 @@ class SauresTestAPI(unittest.TestCase):
         # Негативный тест некорректное поле type
         "data": {
           "sid": SauresTestAPI.class_sid,
-          "id": "34159",
+          "id": "36005",
           "type": "notice",
-          "receiver": "artem.kolchin.979@gmail.com",
+          "receiver": "apiautotest@saures.ru",
         },
         "expected_status": "bad",
         "expected_errors": [
